@@ -1,119 +1,49 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  Activity,
-  AlertTriangle,
-  BatteryCharging,
-  Compass,
-  Lightbulb,
-  PlugZap,
-  CheckCircle2,
-  ChevronDown,
-  MapPin,
-  RefreshCw,
-  Search,
-  ShieldCheck,
-  Wifi,
-  X,
-  Zap,
-} from 'lucide-react'
+import { Activity, AlertCircle, BatteryCharging, CheckCircle2, ChevronDown, Compass, Cpu, Lightbulb, MapPin, PlugZap, ShieldCheck, Wifi, X, Zap } from 'lucide-react'
 
-type Room = { name: string; seats?: string; lab?: boolean; verified?: boolean; capacity?: string }
+type Room = { name: string; lab?: boolean; verified?: boolean; seats?: string }
 type Wing = { name: string; rooms: Room[] }
-type Floor = { id: string; title: string; code: string; ap: string; ping: string; wings: Wing[]; outage?: boolean }
+type Floor = { id: string; short: string; title: string; code: string; ap: string; ping: string; wings: Wing[] }
 
 const floors: Floor[] = [
-  { id: 'gf', title: 'Ground Floor', code: 'ROB-GF', ap: ':d6:b2', ping: '18s ago', wings: [
-    { name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 002', verified: true }, { name: 'Lecture Room 024', verified: true }, { name: 'Lecture Room 025', verified: true }] },
-    { name: 'North Wing', rooms: [{ name: 'Lecture Room 001' }] },
-  ] },
-  { id: 'f1', title: '1st Floor', code: 'ROB-F1', ap: ':01:ed', ping: '35s ago', wings: [
-    { name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 003' }, { name: 'Lecture Room 022' }, { name: 'Lecture Room 023' }] },
-    { name: 'North Wing', rooms: [{ name: 'Lecture Room 004' }, { name: 'Conference Room' }] },
-  ] },
-  { id: 'f2', title: '2nd Floor', code: 'ROB-F2', ap: ':03:17', ping: '6m 14s ago', outage: true, wings: [
-    { name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 006' }, { name: 'Lecture Room 020' }, { name: 'Lecture Room 021' }] },
-    { name: 'North Wing', rooms: [{ name: 'Lecture Room 005' }] },
-  ] },
-  { id: 'f3', title: '3rd Floor', code: 'ROB-F3', ap: ':04:cd', ping: '22s ago', wings: [
-    { name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 017' }, { name: 'Lecture Room 018' }, { name: 'Lecture Room 019' }] },
-    { name: 'North Wing', rooms: [{ name: 'Lecture Room 007' }, { name: 'Lecture Room 008' }, { name: 'Lecture Room 009' }] },
-    { name: 'West & East Wings', rooms: [{ name: 'West Lecture Hall' }, { name: 'East Lecture Hall' }] },
-  ] },
-  { id: 'f4', title: '4th Floor', code: 'ROB-F4', ap: ':06:cc', ping: '48s ago', wings: [
-    { name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Computer Lab 016', lab: true, seats: '24 workstations' }, { name: 'Lecture Room 014' }, { name: 'Lecture Room 015' }] },
-    { name: 'Computer Labs', rooms: [{ name: 'Lab 1 (Room 028)', lab: true, seats: '32 workstations' }, { name: 'Lab 2 (Room 027)', lab: true, seats: '32 workstations' }] },
-    { name: 'North Wing', rooms: [{ name: 'Lecture Rooms 010–013' }] },
-  ] },
+  { id: 'gf', short: 'Ground (GF)', title: 'Ground Floor', code: 'ROB-GF', ap: ':d6:b2', ping: '18s ago', wings: [{ name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 002', verified: true }, { name: 'Lecture Room 024', verified: true }, { name: 'Lecture Room 025', verified: true }] }, { name: 'North Wing', rooms: [{ name: 'Lecture Room 001' }] }] },
+  { id: 'f1', short: '1st Floor', title: '1st Floor', code: 'ROB-F1', ap: ':01:ed', ping: '35s ago', wings: [{ name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 003' }, { name: 'Lecture Room 022' }, { name: 'Lecture Room 023' }] }, { name: 'North Wing', rooms: [{ name: 'Lecture Room 004' }, { name: 'Conference Room' }] }] },
+  { id: 'f2', short: '2nd Floor', title: '2nd Floor', code: 'ROB-F2', ap: ':03:17', ping: '6m 14s ago', wings: [{ name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 006' }, { name: 'Lecture Room 020' }, { name: 'Lecture Room 021' }] }, { name: 'North Wing', rooms: [{ name: 'Lecture Room 005' }] }] },
+  { id: 'f3', short: '3rd Floor', title: '3rd Floor', code: 'ROB-F3', ap: ':04:cd', ping: '22s ago', wings: [{ name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Lecture Room 017' }, { name: 'Lecture Room 018' }, { name: 'Lecture Room 019' }] }, { name: 'North Wing', rooms: [{ name: 'Lecture Room 007' }, { name: 'Lecture Room 008' }, { name: 'Lecture Room 009' }] }, { name: 'Left & Right Wings', rooms: [{ name: 'West Lecture Hall' }, { name: 'East Lecture Hall' }] }] },
+  { id: 'f4', short: '4th Floor', title: '4th Floor', code: 'ROB-F4', ap: ':06:cc', ping: '48s ago', wings: [{ name: 'South Wing (Lecture Halls)', rooms: [{ name: 'Computer Lab 016', lab: true, seats: '24 workstations' }, { name: 'Lecture Room 014' }, { name: 'Lecture Room 015' }] }, { name: 'Computer Labs', rooms: [{ name: 'Computer Lab 1 (Room 028)', lab: true, seats: '32 workstations' }, { name: 'Computer Lab 2 (Room 027)', lab: true, seats: '32 workstations' }] }, { name: 'North Wing', rooms: [{ name: 'Lecture Room 010' }, { name: 'Lecture Room 011' }, { name: 'Lecture Room 012' }, { name: 'Lecture Room 013' }] }] },
 ]
 
-function Metric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'green' | 'rose' }) {
-  return <div className="metric-card"><span className="metric-label">{label}</span><strong className={tone}>{value}</strong></div>
-}
+function PlugStatus({ outage }: { outage: boolean }) { return <div className="plug-status" aria-label={outage ? 'Sockets tripped, no grid power' : 'Sockets live'}>{[1, 2, 3, 4].map((item) => <PlugZap key={item} size={16} className={outage ? 'plug tripped' : 'plug'} />)}<span>{outage ? 'Sockets tripped / no grid power' : 'Sockets live'}</span></div> }
 
-function RoomCard({ room, outage }: { room: Room; outage?: boolean }) {
-  const unavailable = outage
-  const capacity = room.capacity ?? (room.lab ? '24 / 32 Seats Taken' : '18 / 45 Seats Taken')
-  return <div className={room.lab ? 'room-card lab-card' : 'room-card'}>
-    <div className="room-top"><strong>{room.name}</strong><span className={unavailable ? 'room-state dead' : 'room-state'}>{unavailable ? 'No Power' : room.lab ? 'Lab Ready' : 'Available'}</span></div>
-    <div className="socket-row" aria-label={unavailable ? 'Sockets tripped' : 'Live sockets'}>{[0, 1, 2, 3].map((socket) => <PlugZap key={socket} size={14} className={unavailable ? 'socket dead' : 'socket'} />)}</div>
-    <div className="room-details">
-      <span><Lightbulb size={13} /> {unavailable ? 'Ambient lights off' : 'Ambient lights on'}</span>
-      <span><BatteryCharging size={13} /> {unavailable ? 'AC offline' : room.lab ? `${room.seats} · workstation power` : room.verified ? 'Sockets verified' : 'AC · Fan active'}</span>
-    </div>
-    <div className="room-bottom"><span className="occupancy-dot" /> {unavailable ? 'Unavailable' : <span className="capacity-pill">{capacity}</span>}<span className="wifi-quality"><Wifi size={12} /> {unavailable ? 'Offline' : 'Strong'}</span></div>
-  </div>
-}
+function RoomCard({ room, outage }: { room: Room; outage: boolean }) { return <article className={`room-card ${room.lab ? 'lab-card' : ''} ${outage ? 'room-outage' : ''}`}><div className="room-card-head"><strong>{room.name}</strong><span>{outage ? 'No Power' : room.lab ? 'Lab Ready' : 'Available'}</span></div><PlugStatus outage={outage} /><div className="room-facts"><span><Lightbulb size={14} /> {outage ? 'Lights off' : 'Lights active'}</span><span><BatteryCharging size={14} /> {outage ? 'AC offline' : room.lab ? room.seats : room.verified ? 'Sockets verified' : 'AC / fan active'}</span></div><div className="room-card-foot"><span><span className="status-dot" /> {outage ? 'Unavailable' : 'Seating available'}</span><span><Wifi size={13} /> {outage ? 'Offline' : 'Strong signal'}</span></div></article> }
 
-function BuildingElevation({ outages, onSelect }: { outages: string[]; onSelect: (id: string) => void }) {
-  const order = [...floors].reverse()
-  return <section className="building-elevation" aria-label="Interactive ROB building elevation"><div className="building-glow" /><div className="elevation-label"><span className="eyebrow">LIVE ARCHITECTURAL ELEVATION</span><span><Activity size={12} /> 5 levels</span></div><div className="building-stack">{order.map((floor) => { const outage = outages.includes(floor.id); return <button key={floor.id} className={outage ? 'building-slab hazard' : 'building-slab'} onClick={() => onSelect(floor.id)}><span className="slab-window" /><span className="slab-label">{floor.title.replace(' Floor', 'F')}</span><span className={outage ? 'slab-warning' : 'slab-live'}>{outage ? <AlertTriangle size={13} /> : <span className="live-dot small" />}</span></button> })}</div><div className="elevation-base"><span>ROB</span><span>GROUND DATUM</span></div></section>
-}
+function BuildingElevation({ active, outage, onSelect }: { active: string; outage: boolean; onSelect: (id: string) => void }) { return <div className="elevation"><div className="elevation-top"><span>INTERACTIVE ROB CROSS-SECTION</span><span><Activity size={13} /> 5 levels</span></div><div className="elevation-stack">{[...floors].reverse().map((floor) => <button key={floor.id} onClick={() => onSelect(floor.id)} className={`elevation-floor ${floor.id === active ? 'selected' : ''} ${floor.id === 'f2' && outage ? 'hazard' : ''}`} aria-label={`Select ${floor.title}`}><span className="floor-windows" /><b>{floor.short.replace(' Floor', 'F')}</b>{floor.id === 'f2' && outage ? <AlertCircle size={15} /> : <span className="stable-dot" />}</button>)}</div><div className="elevation-base"><span>ROB</span><span>GROUND DATUM</span></div></div> }
+
+function TelemetryRadar() { return <div className="radar-panel"><div className="radar-orbit orbit-one" /><div className="radar-orbit orbit-two" /><div className="radar-sweep" /><div className="radar-core"><Activity size={22} /><span>LIVE</span></div><div className="radar-beacon beacon-a"><Wifi size={13} /> AP 01</div><div className="radar-beacon beacon-b"><Wifi size={13} /> AP 06</div><div className="radar-beacon beacon-c"><Wifi size={13} /> AP 08</div></div> }
 
 export function CampusPulse() {
-  const [openFloor, setOpenFloor] = useState('f1')
-  const floorRefs = useMemo(() => new Map<string, HTMLElement>(), [])
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('All Floors')
-  const [showSimulator, setShowSimulator] = useState(false)
+  const [activeFloor, setActiveFloor] = useState('f1')
+  const [heroTab, setHeroTab] = useState<'building' | 'telemetry'>('building')
   const [outages, setOutages] = useState(['f2'])
-  const [refreshing, setRefreshing] = useState(false)
-
-  const visibleFloors = useMemo(() => floors.filter((floor) => {
-    const searchable = `${floor.title} ${floor.code} ${floor.wings.map((wing) => `${wing.name} ${wing.rooms.map((room) => room.name).join(' ')}`).join(' ')}`
-    const matchesQuery = searchable.toLowerCase().includes(query.toLowerCase())
-    const stable = !outages.includes(floor.id)
-    const matchesFilter = filter === 'All Floors' || (filter === 'Power Stable' && stable) || (filter === 'Dumsor Alerts' && !stable)
-    return matchesQuery && matchesFilter
-  }), [query, filter, outages])
-
+  const [showDemo, setShowDemo] = useState(false)
+  const floor = floors.find((item) => item.id === activeFloor) ?? floors[1]
+  const online = 5 - outages.length
   const toggleOutage = (id: string) => setOutages((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
-  const selectFloor = (id: string) => { setOpenFloor(id); window.setTimeout(() => floorRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 40) }
-  const refresh = () => { setRefreshing(true); window.setTimeout(() => setRefreshing(false), 900) }
+  const selectFloor = (id: string) => setActiveFloor(id)
+  const floorStatus = useMemo(() => outages.includes(floor.id), [floor.id, outages])
 
-  return (
-    <main className="pulse-shell">
-      <div className="pulse-container">
-        <header className="top-header">
-          <div className="brand-lockup"><div className="brand-mark"><Zap size={19} fill="currentColor" /></div><div><p className="eyebrow">USTED CAMPUS PULSE</p><h1>Reynolds Okai Building</h1><p className="muted"><MapPin size={13} /> Kumasi Main Campus <span className="code-pill">ROB</span></p></div></div>
-          <button className="icon-button" onClick={refresh} aria-label="Refresh telemetry"><RefreshCw size={17} className={refreshing ? 'spin' : ''} /></button>
-        </header>
-        <section className="live-strip"><span className="live-dot" /><div><strong>Passive Wi-Fi Telemetry Active</strong><p>Grid signal is being monitored without hardware</p></div><ShieldCheck size={18} /></section>
-        <section className="heartbeat-strip"><div className="heartbeat-heading"><span><Activity size={13} /> Signal Stream Heartbeat</span><span className="beacon-live"><span className="live-dot small" /> LIVE</span></div><svg className="pulse-wave" viewBox="0 0 520 42" role="img" aria-label="Live telemetry pulse wave"><path d="M0 22h70l12-1 10 1 10-18 13 35 13-19 12 2h58l12-1 11 1 11-18 13 35 13-19 12 2h58l12-1 11 1 11-18 13 35 13-19 12 2h70" /></svg><div className="heartbeat-meta"><span>Latest Ingest: <strong>0.24KB payload · 42ms</strong></span><span>Active Beacons: <strong>8 UniFi APs online</strong></span></div></section>
-        <BuildingElevation outages={outages} onSelect={selectFloor} />
-        <section className="metrics"><Metric label="Floors tracked" value="5" /><Metric label="Grid active" value={`${5 - outages.length}/5`} tone="green" /><Metric label="Active outages" value={`${outages.length}`} tone="rose" /></section>
-        {outages.length > 0 && <section className="alert-banner"><div className="alert-icon"><AlertTriangle size={18} /></div><div><strong>Campus alert · Floor 2</strong><p>ROB-F2 reported silent for &gt; 6 mins. Power outage suspected.</p></div><span className="alert-live">LIVE</span></section>}
-        <section className="toolbar"><div className="search-wrap"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search official room number" aria-label="Search room or floor" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><X size={15} /></button>}</div><div className="filters">{['All Floors', 'Power Stable', 'Dumsor Alerts'].map((item) => <button key={item} className={filter === item ? 'filter active' : 'filter'} onClick={() => setFilter(item)}>{item}</button>)}</div></section>
-        <div className="section-heading"><div><p className="eyebrow">BUILDING OVERVIEW</p><h2>Floor status</h2></div><span className="updated"><span className="live-dot small" /> Updated now</span></div>
-        <section className="floor-list">{visibleFloors.map((floor) => { const isOutage = outages.includes(floor.id); const expanded = openFloor === floor.id; return <article ref={(node) => { if (node) floorRefs.set(floor.id, node) }} className={isOutage ? 'floor-card outage' : 'floor-card'} key={floor.id}>
-          <button className="floor-toggle" onClick={() => setOpenFloor(expanded ? '' : floor.id)} aria-expanded={expanded}><div className="floor-status-icon">{isOutage ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}</div><div className="floor-main"><div className="floor-title-row"><h3>{floor.title}</h3><span className="wing">· {floor.code}</span></div><div className="floor-meta"><span className={isOutage ? 'power-badge outage-badge' : 'power-badge'}>{isOutage ? 'Dumsor Detected' : 'Power Stable'}</span><span>AP {floor.ap}</span><span>Pinged {floor.ping}</span></div></div><ChevronDown size={18} className={expanded ? 'chevron open' : 'chevron'} /></button>
-          {expanded && <div className="floor-content"><div className="content-rule" />{floor.wings.map((wing) => <div className="wing-group" key={wing.name}><div className="wing-heading"><span>{wing.name}</span><small>{wing.rooms.length} {wing.rooms.length === 1 ? 'space' : 'spaces'}</small></div><div className="room-grid">{wing.rooms.map((room) => <RoomCard key={room.name} room={room} outage={isOutage} />)}</div></div>)}<div className="floor-footer"><span><Wifi size={13} /> {isOutage ? 'AP signal decaying' : 'Wi-Fi coverage verified'}</span><span className={isOutage ? 'footer-alert' : ''}>{isOutage ? 'Needs attention' : 'All systems normal'}</span></div></div>}
-        </article> })}</section>
-        <button className="simulator-trigger" onClick={() => setShowSimulator(!showSimulator)}><span className="simulator-icon"><Zap size={16} /></span><span><strong>Demo Outage Simulator</strong><small>Test live campus states</small></span><ChevronDown size={18} className={showSimulator ? 'chevron open' : 'chevron'} /></button>
-        {showSimulator && <section className="simulator-panel"><div className="simulator-heading"><div><p className="eyebrow">DEMO CONTROLS</p><h3>Simulate telemetry</h3></div><span className="demo-badge">DEMO</span></div><button className="sim-action" onClick={() => toggleOutage('f2')}><span className="action-icon green"><CheckCircle2 size={16} /></span><span><strong>{outages.includes('f2') ? 'Simulate Floor 2 Power Restored' : 'Simulate Floor 2 Blackout'}</strong><small>Updates the live floor state</small></span><span className="action-arrow">→</span></button><button className="sim-action" onClick={() => toggleOutage('f1')}><span className="action-icon rose"><AlertTriangle size={16} /></span><span><strong>{outages.includes('f1') ? 'Restore Floor 1 Power' : 'Trigger Floor 1 Blackout'}</strong><small>Test the alert banner</small></span><span className="action-arrow">→</span></button><button className="sim-action" onClick={refresh}><span className="action-icon blue"><RefreshCw size={16} /></span><span><strong>Simulate Student Phone Walk-by</strong><small>Trigger a live BSSID ping refresh</small></span><span className="action-arrow">→</span></button></section>}
-        <p className="footer-note"><Wifi size={13} /> Zero-hardware telemetry · Official ROB directory dataset</p>
-      </div>
-    </main>
-  )
+  return <main className="pulse-shell"><div className="pulse-container">
+    <header className="app-bar"><div className="institution-lockup"><div className="crest" aria-label="USTED crest placeholder"><Compass size={22} /></div><div><p className="brand-eyebrow">USTED CAMPUS PULSE</p><h1>Reynolds Okai Building <span>(ROB)</span></h1><p className="campus-line"><MapPin size={13} /> Kumasi Main Campus <span className="campus-badge">MAIN CAMPUS</span></p></div></div><button className="close-button" aria-label="Close dashboard"><X size={18} /></button></header>
+    <div className="summary-chip"><Zap size={14} /> <strong>{online}/5 Floors Online</strong><span>•</span><span className="summary-alert">{outages.length} Outage Reported</span></div>
+    <section className="live-strip"><span className="live-dot" /><div><strong>Passive Wi-Fi Telemetry Active</strong><p>Grid signal monitored without hardware</p></div><ShieldCheck size={18} /></section>
+    <section className="hero-card"><div className="hero-tabs" role="tablist"><button className={heroTab === 'building' ? 'hero-tab active' : 'hero-tab'} onClick={() => setHeroTab('building')} role="tab" aria-selected={heroTab === 'building'}><Cpu size={15} /> Building Cross-Section</button><button className={heroTab === 'telemetry' ? 'hero-tab active' : 'hero-tab'} onClick={() => setHeroTab('telemetry')} role="tab" aria-selected={heroTab === 'telemetry'}><Activity size={15} /> Live Telemetry Radar</button></div>{heroTab === 'building' ? <BuildingElevation active={activeFloor} outage={outages.includes('f2')} onSelect={selectFloor} /> : <TelemetryRadar />}<div className="telemetry-footer"><span>Signal heartbeat <strong>0.24KB payload • 42ms</strong></span><span><Wifi size={13} /> <strong>8 UniFi APs online</strong></span></div></section>
+    <nav className="floor-selector" aria-label="Select floor">{floors.map((item) => <button key={item.id} onClick={() => selectFloor(item.id)} className={activeFloor === item.id ? 'floor-tab active' : 'floor-tab'}>{item.short}{item.id === 'f2' && outages.includes('f2') && <span className="tab-alert">!</span>}</button>)}</nav>
+    <section className="floor-heading"><div><p className="section-kicker">FOCUSED ROOM MATRIX</p><h2>{floor.title} <span>{floor.code}</span></h2></div><span className={floorStatus ? 'status-badge outage' : 'status-badge'}>{floorStatus ? 'Dumsor Detected' : 'Power Stable'}</span></section>
+    {floorStatus && <div className="floor-alert"><AlertCircle size={17} /><div><strong>Silent &gt; 6 mins</strong><span>Power outage suspected on {floor.code}. Room telemetry is stale.</span></div></div>}
+    <section className="room-matrix">{floor.wings.map((wing) => <div className="wing-group" key={wing.name}><div className="wing-heading"><span><Compass size={13} /> {wing.name}</span><small>{wing.rooms.length} {wing.rooms.length === 1 ? 'space' : 'spaces'}</small></div><div className="room-grid">{wing.rooms.map((room) => <RoomCard key={room.name} room={room} outage={floorStatus} />)}</div></div>)}</section>
+    <button className="demo-drawer-trigger" onClick={() => setShowDemo(!showDemo)}><span><Zap size={16} /> Demo Lab</span><small>Live campus triggers</small><ChevronDown className={showDemo ? 'rotate' : ''} size={17} /></button>{showDemo && <section className="demo-drawer"><div className="drawer-title"><div><p className="section-kicker">DEMO CONTROLS</p><h3>Simulator</h3></div><span>DEMO</span></div><button onClick={() => toggleOutage('f2')}><CheckCircle2 size={17} /> {outages.includes('f2') ? 'Simulate Floor 2 Power Restored' : 'Simulate Floor 2 Blackout'}</button><button onClick={() => toggleOutage('f1')}><AlertCircle size={17} /> {outages.includes('f1') ? 'Restore Floor 1 Power' : 'Trigger Floor 1 Blackout'}</button><button onClick={() => setHeroTab('telemetry')}><Wifi size={17} /> Simulate Student Phone Walk-by BSSID Ping</button></section>}
+    <nav className="bottom-nav" aria-label="Primary navigation"><button className="nav-item active"><Cpu size={18} /><span>Facilities</span></button><button className="nav-item"><Activity size={18} /><span>Grid Health</span></button><button className="nav-item" onClick={() => setShowDemo(!showDemo)}><Zap size={18} /><span>Demo Lab</span></button></nav>
+  </div></main>
 }
