@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'AAMUSTED Campus Pulse',
+  title: 'USTED Campus Pulse',
   description: 'Real-time power and study space availability for Reynolds Okai Building.',
   generator: 'v0.app',
   icons: {
