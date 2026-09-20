@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import {
+  Activity,
   AlertTriangle,
   BatteryCharging,
+  Compass,
+  Lightbulb,
+  PlugZap,
   CheckCircle2,
   ChevronDown,
   MapPin,
@@ -15,7 +19,7 @@ import {
   Zap,
 } from 'lucide-react'
 
-type Room = { name: string; seats?: string; lab?: boolean; verified?: boolean }
+type Room = { name: string; seats?: string; lab?: boolean; verified?: boolean; capacity?: string }
 type Wing = { name: string; rooms: Room[] }
 type Floor = { id: string; title: string; code: string; ap: string; ping: string; wings: Wing[]; outage?: boolean }
 
@@ -50,18 +54,26 @@ function Metric({ label, value, tone = 'default' }: { label: string; value: stri
 
 function RoomCard({ room, outage }: { room: Room; outage?: boolean }) {
   const unavailable = outage
+  const capacity = room.capacity ?? (room.lab ? '24 / 32 Seats Taken' : '18 / 45 Seats Taken')
   return <div className={room.lab ? 'room-card lab-card' : 'room-card'}>
     <div className="room-top"><strong>{room.name}</strong><span className={unavailable ? 'room-state dead' : 'room-state'}>{unavailable ? 'No Power' : room.lab ? 'Lab Ready' : 'Available'}</span></div>
+    <div className="socket-row" aria-label={unavailable ? 'Sockets tripped' : 'Live sockets'}>{[0, 1, 2, 3].map((socket) => <PlugZap key={socket} size={14} className={unavailable ? 'socket dead' : 'socket'} />)}</div>
     <div className="room-details">
-      <span><Zap size={13} /> {unavailable ? 'Sockets Tripped' : room.lab ? 'Dedicated plugs active' : room.verified ? 'Sockets verified' : 'Wall Sockets Active'}</span>
-      <span><BatteryCharging size={13} /> {unavailable ? 'AC offline' : room.lab ? `${room.seats} · workstation power` : 'AC · Fan active'}</span>
+      <span><Lightbulb size={13} /> {unavailable ? 'Ambient lights off' : 'Ambient lights on'}</span>
+      <span><BatteryCharging size={13} /> {unavailable ? 'AC offline' : room.lab ? `${room.seats} · workstation power` : room.verified ? 'Sockets verified' : 'AC · Fan active'}</span>
     </div>
-    <div className="room-bottom"><span className="occupancy-dot" /> {unavailable ? 'Unavailable' : room.lab ? 'Workstations online' : `${room.seats ?? 'Quiet zone'} · Quiet zone`}<span className="wifi-quality"><Wifi size={12} /> {unavailable ? 'Offline' : 'Strong'}</span></div>
+    <div className="room-bottom"><span className="occupancy-dot" /> {unavailable ? 'Unavailable' : <span className="capacity-pill">{capacity}</span>}<span className="wifi-quality"><Wifi size={12} /> {unavailable ? 'Offline' : 'Strong'}</span></div>
   </div>
+}
+
+function BuildingElevation({ outages, onSelect }: { outages: string[]; onSelect: (id: string) => void }) {
+  const order = [...floors].reverse()
+  return <section className="building-elevation" aria-label="Interactive ROB building elevation"><div className="building-glow" /><div className="elevation-label"><span className="eyebrow">LIVE ARCHITECTURAL ELEVATION</span><span><Activity size={12} /> 5 levels</span></div><div className="building-stack">{order.map((floor) => { const outage = outages.includes(floor.id); return <button key={floor.id} className={outage ? 'building-slab hazard' : 'building-slab'} onClick={() => onSelect(floor.id)}><span className="slab-window" /><span className="slab-label">{floor.title.replace(' Floor', 'F')}</span><span className={outage ? 'slab-warning' : 'slab-live'}>{outage ? <AlertTriangle size={13} /> : <span className="live-dot small" />}</span></button> })}</div><div className="elevation-base"><span>ROB</span><span>GROUND DATUM</span></div></section>
 }
 
 export function CampusPulse() {
   const [openFloor, setOpenFloor] = useState('f1')
+  const floorRefs = useMemo(() => new Map<string, HTMLElement>(), [])
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('All Floors')
   const [showSimulator, setShowSimulator] = useState(false)
@@ -77,6 +89,7 @@ export function CampusPulse() {
   }), [query, filter, outages])
 
   const toggleOutage = (id: string) => setOutages((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const selectFloor = (id: string) => { setOpenFloor(id); window.setTimeout(() => floorRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 40) }
   const refresh = () => { setRefreshing(true); window.setTimeout(() => setRefreshing(false), 900) }
 
   return (
@@ -87,11 +100,13 @@ export function CampusPulse() {
           <button className="icon-button" onClick={refresh} aria-label="Refresh telemetry"><RefreshCw size={17} className={refreshing ? 'spin' : ''} /></button>
         </header>
         <section className="live-strip"><span className="live-dot" /><div><strong>Passive Wi-Fi Telemetry Active</strong><p>Grid signal is being monitored without hardware</p></div><ShieldCheck size={18} /></section>
+        <section className="heartbeat-strip"><div className="heartbeat-heading"><span><Activity size={13} /> Signal Stream Heartbeat</span><span className="beacon-live"><span className="live-dot small" /> LIVE</span></div><svg className="pulse-wave" viewBox="0 0 520 42" role="img" aria-label="Live telemetry pulse wave"><path d="M0 22h70l12-1 10 1 10-18 13 35 13-19 12 2h58l12-1 11 1 11-18 13 35 13-19 12 2h58l12-1 11 1 11-18 13 35 13-19 12 2h70" /></svg><div className="heartbeat-meta"><span>Latest Ingest: <strong>0.24KB payload · 42ms</strong></span><span>Active Beacons: <strong>6 UniFi APs online</strong></span></div></section>
+        <BuildingElevation outages={outages} onSelect={selectFloor} />
         <section className="metrics"><Metric label="Floors tracked" value="5" /><Metric label="Grid active" value={`${5 - outages.length}/5`} tone="green" /><Metric label="Active outages" value={`${outages.length}`} tone="rose" /></section>
         {outages.length > 0 && <section className="alert-banner"><div className="alert-icon"><AlertTriangle size={18} /></div><div><strong>Campus alert · Floor 2</strong><p>ROB-F2 reported silent for &gt; 6 mins. Power outage suspected.</p></div><span className="alert-live">LIVE</span></section>}
         <section className="toolbar"><div className="search-wrap"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search official room number" aria-label="Search room or floor" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><X size={15} /></button>}</div><div className="filters">{['All Floors', 'Power Stable', 'Dumsor Alerts'].map((item) => <button key={item} className={filter === item ? 'filter active' : 'filter'} onClick={() => setFilter(item)}>{item}</button>)}</div></section>
         <div className="section-heading"><div><p className="eyebrow">BUILDING OVERVIEW</p><h2>Floor status</h2></div><span className="updated"><span className="live-dot small" /> Updated now</span></div>
-        <section className="floor-list">{visibleFloors.map((floor) => { const isOutage = outages.includes(floor.id); const expanded = openFloor === floor.id; return <article className={isOutage ? 'floor-card outage' : 'floor-card'} key={floor.id}>
+        <section className="floor-list">{visibleFloors.map((floor) => { const isOutage = outages.includes(floor.id); const expanded = openFloor === floor.id; return <article ref={(node) => { if (node) floorRefs.set(floor.id, node) }} className={isOutage ? 'floor-card outage' : 'floor-card'} key={floor.id}>
           <button className="floor-toggle" onClick={() => setOpenFloor(expanded ? '' : floor.id)} aria-expanded={expanded}><div className="floor-status-icon">{isOutage ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}</div><div className="floor-main"><div className="floor-title-row"><h3>{floor.title}</h3><span className="wing">· {floor.code}</span></div><div className="floor-meta"><span className={isOutage ? 'power-badge outage-badge' : 'power-badge'}>{isOutage ? 'Dumsor Detected' : 'Power Stable'}</span><span>AP {floor.ap}</span><span>Pinged {floor.ping}</span></div></div><ChevronDown size={18} className={expanded ? 'chevron open' : 'chevron'} /></button>
           {expanded && <div className="floor-content"><div className="content-rule" />{floor.wings.map((wing) => <div className="wing-group" key={wing.name}><div className="wing-heading"><span>{wing.name}</span><small>{wing.rooms.length} {wing.rooms.length === 1 ? 'space' : 'spaces'}</small></div><div className="room-grid">{wing.rooms.map((room) => <RoomCard key={room.name} room={room} outage={isOutage} />)}</div></div>)}<div className="floor-footer"><span><Wifi size={13} /> {isOutage ? 'AP signal decaying' : 'Wi-Fi coverage verified'}</span><span className={isOutage ? 'footer-alert' : ''}>{isOutage ? 'Needs attention' : 'All systems normal'}</span></div></div>}
         </article> })}</section>
